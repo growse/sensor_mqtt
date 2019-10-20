@@ -1,0 +1,12 @@
+[Unit]
+Description=Daemon to publish sensor metrics to MQTT
+
+[Service]
+Type=simple
+User=sensor_mqtt
+ExecStart=/usr/bin/sensor_mqtt
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
