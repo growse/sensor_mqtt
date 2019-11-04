@@ -2,7 +2,7 @@
 #bme280_i2c_device_address: 0x76
 #bme280_i2c_bus_id: 1
 
-#measure_interval: 30
+#measure_interval: 30s
 
 #mqtt_hostname: "mosquitto"
 #mqtt_port: 1883
