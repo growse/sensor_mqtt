@@ -1,6 +1,6 @@
 module github.com/growse/sensor_mqtt
 
-go 1.13
+go 1.14
 
 require (
 	github.com/d2r2/go-bsbmp v0.0.0-20190515110334-3b4b3aea8375

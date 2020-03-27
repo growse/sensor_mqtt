@@ -17,12 +17,12 @@ func setupConfig(hostname string) *Configuration {
 		log.Fatalf("Fatal error Configuration file: %v", err)
 	}
 	defaultConfig := &Configuration{
-		MQTTHostname: "mqtt",
-		MQTTPort:     1883,
-		MQTTUsername: "sensor_mqtt",
-		MQTTPassword: "password",
-		MQTTClientId: fmt.Sprintf("%v_sensor_mqtt", hostname),
-		MeasureInterval: 30 * time.Second,
+		MQTTHostname:           "mqtt",
+		MQTTPort:               1883,
+		MQTTUsername:           "sensor_mqtt",
+		MQTTPassword:           "password",
+		MQTTClientId:           fmt.Sprintf("%v_sensor_mqtt", hostname),
+		MeasureInterval:        30 * time.Second,
 		BME280I2CDeviceAddress: 0x76,
 		BME280I2CBusId:         1,
 	}
