@@ -23,7 +23,7 @@ package: $(addsuffix .deb, $(addprefix $(DEBNAME)_$(DEBVERSION)_, $(foreach a, $
 .PHONY: build
 build: $(addprefix dist/$(DEBNAME)_linux_, $(foreach a, $(ARCH), $(a)))
 
-dist/$(DEBNAME)_linux_%:
+dist/$(DEBNAME)_linux_%: $(wildcard *.go)
 	GOOS=linux GOARCH=$* go build -o dist/$(DEBNAME)_linux_$*
 
 $(DEBNAME)_$(DEBVERSION)_%.deb: dist/$(DEBNAME)_linux_%

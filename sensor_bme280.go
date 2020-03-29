@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/d2r2/go-bsbmp"
 	"github.com/d2r2/go-logger"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"log"
 	"time"
 )
@@ -18,9 +20,9 @@ const SensorAccuracy = bsbmp.ACCURACY_HIGH
 
 var humiditySupported = true
 
-func getI2CConnection(configuration *Configuration) *i2c.I2C {
+func getI2CConnection(deviceAddress uint8, busId int) *i2c.I2C {
 	_ = logger.ChangePackageLogLevel("i2c", logger.InfoLevel)
-	i2cConnection, err := i2c.NewI2C(configuration.BME280I2CDeviceAddress, configuration.BME280I2CBusId)
+	i2cConnection, err := i2c.NewI2C(deviceAddress, busId)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,9 +30,10 @@ func getI2CConnection(configuration *Configuration) *i2c.I2C {
 
 }
 
-func getBME280Sensor(i2cConnection *i2c.I2C) *bsbmp.BMP {
+func GetBME280Sensor(deviceAddress uint8, busId int) *bsbmp.BMP {
+	i2c := getI2CConnection(deviceAddress, busId)
 	_ = logger.ChangePackageLogLevel("bsbmp", logger.InfoLevel)
-	sensor, err := bsbmp.NewBMP(bsbmp.BME280, i2cConnection)
+	sensor, err := bsbmp.NewBMP(bsbmp.BME280, i2c)
 	if err != nil {
 		log.Fatalf("Unable to connect to BME280 Sensor: %v", err)
 	}
@@ -61,19 +64,58 @@ func collectMeasurements(sensor *bsbmp.BMP) BME280Measurements {
 	return BME280Measurements{Temperature: temperature, Pressure: pressure / 100, Humidity: humidity}
 }
 
-func startMeasurementCollectorLoop(interval time.Duration, bmp *bsbmp.BMP) chan BME280Measurements {
+func startBME280MeasurementCollectorLoop(interval time.Duration, deviceAddress uint8, busId int, quit chan bool) chan BME280Measurements {
+	bme280Sensor := GetBME280Sensor(deviceAddress, busId)
 	ticker := time.NewTicker(interval)
 	dataChannel := make(chan BME280Measurements)
-	go loop(dataChannel, bmp, ticker)
+	go bme280Loop(dataChannel, bme280Sensor, ticker, quit)
 	return dataChannel
 }
 
-func loop(measurements chan<- BME280Measurements, bmp *bsbmp.BMP, ticker *time.Ticker) {
+func bme280Loop(measurements chan<- BME280Measurements, bme280Sensor *bsbmp.BMP, ticker *time.Ticker, quit chan bool) {
 	defer ticker.Stop()
+	log.Println("BME280 Collector loop")
+	measurements <- collectMeasurements(bme280Sensor)
+L:
 	for {
 		select {
 		case <-ticker.C:
-			measurements <- collectMeasurements(bmp)
+			measurements <- collectMeasurements(bme280Sensor)
+			break
+		case <-quit:
+			break L
 		}
 	}
+	log.Println("Exiting BME280 Collector loop")
+}
+
+func startBME280MQTTPublisherLoop(mqttClient mqtt.Client, dataChan chan BME280Measurements, topicPrefix string, quit chan bool) {
+	log.Println("BME280 Publisher loop")
+L:
+	for {
+		select {
+		case data := <-dataChan:
+			var token mqtt.Token
+			token = mqttClient.Publish(topicPrefix+"/temperature", 0, false, fmt.Sprintf("%.2f", data.Temperature))
+			token.Wait()
+			if token.Error() != nil {
+				log.Printf("Error publishing metric to MQTT: %v", token.Error())
+			}
+			token = mqttClient.Publish(topicPrefix+"/pressure", 0, false, fmt.Sprintf("%.2f", data.Pressure))
+			token.Wait()
+			if token.Error() != nil {
+				log.Printf("Error publishing metric to MQTT: %v", token.Error())
+			}
+			token = mqttClient.Publish(topicPrefix+"/humidity", 0, false, fmt.Sprintf("%.2f", data.Humidity))
+			token.Wait()
+			if token.Error() != nil {
+				log.Printf("Error publishing metric to MQTT: %v", token.Error())
+			}
+			break
+		case <-quit:
+			log.Println("Request to exit BME280 Publisher loop")
+			break L
+		}
+	}
+	log.Println("Exiting BME280 Publisher loop")
 }
