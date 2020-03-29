@@ -11,7 +11,7 @@ func setupConfig(hostname string) *Configuration {
 	viper.SetConfigName("sensor_mqtt")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
-	//viper.AddConfigPath("/etc/sensor_mqtt/")
+	viper.AddConfigPath("/etc/sensor_mqtt/")
 
 	err := viper.ReadInConfig()
 	// Find and read the Configuration file
