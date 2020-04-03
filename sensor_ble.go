@@ -51,6 +51,9 @@ func readBLEMeausurements(btleMacAddress string, characteristicUUID string) (*BL
 	}()
 
 	p, err := cln.DiscoverProfile(true)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting profile: %v", err)
+	}
 	charToFind := ble.Characteristic{UUID: uuid}
 	char := p.FindCharacteristic(&charToFind)
 	if char == nil {
@@ -83,16 +86,20 @@ func startBLEMeasurementCollectorLoop(interval time.Duration, btleMacAddress str
 func bleLoop(measurements chan<- BLEMeasurements, ticker *time.Ticker, btleMacAddress string, characteristicUUID string, quit chan bool) {
 	log.Println("BLE Collector loop")
 	defer ticker.Stop()
-	m, _ := readBLEMeausurements(btleMacAddress, characteristicUUID)
-	if m != nil {
+	m, err := readBLEMeausurements(btleMacAddress, characteristicUUID)
+	if err != nil {
+		log.Printf("Error reading BLE readins: %v", err)
+	} else if m != nil {
 		measurements <- *m
 	}
 L:
 	for {
 		select {
 		case <-ticker.C:
-			m, _ := readBLEMeausurements(btleMacAddress, characteristicUUID)
-			if m != nil {
+			m, err := readBLEMeausurements(btleMacAddress, characteristicUUID)
+			if err != nil {
+				log.Printf("Error reading BLE readins: %v", err)
+			} else if m != nil {
 				measurements <- *m
 			}
 			break
