@@ -8,5 +8,5 @@ require (
 	github.com/d2r2/go-logger v0.0.0-20181221090742-9998a510495e
 	github.com/eclipse/paho.mqtt.golang v1.2.0
 	github.com/go-ble/ble v0.0.0-20200120171844-0a73a9da88eb
-	github.com/spf13/viper v1.6.2
+	github.com/spf13/viper v1.6.3
 )
