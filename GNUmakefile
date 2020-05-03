@@ -1,5 +1,5 @@
 DEBNAME := sensor_mqtt
-VERSION := v0.0.1
+VERSION := v0.0.2
 APPDESCRIPTION := Daemon to publish sensor metrics to MQTT
 APPURL := https://github.com/growse/sensor_mqtt
 ARCH := amd64 arm

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-ble/ble"
-	"github.com/go-ble/ble/examples/lib/dev"
+	"github.com/go-ble/ble/linux"
 	"log"
 	"strings"
 	"time"
@@ -20,24 +20,31 @@ type BLEMeasurements struct {
 	RadonLongTerm  float32
 }
 
-func readBLEMeausurements(btleMacAddress string, characteristicUUID string) (*BLEMeasurements, error) {
+func readBLEMeasurements(bleMacAddress string, characteristicUUID string) (*BLEMeasurements, error) {
+	log.Print("Collecting BLE measurements")
 	uuid, err := ble.Parse(characteristicUUID)
 	if err != nil {
 		log.Fatalf("Invalid characteristic UUID %v", characteristicUUID)
 	}
-	d, err := dev.NewDevice("default")
+	device, err := linux.NewDevice()
 	if err != nil {
 		return nil, fmt.Errorf("can't get new device : %s", err)
 	}
-	ble.SetDefaultDevice(d)
+	if device != nil {
+		defer device.Stop()
+	}
+	ble.SetDefaultDevice(device)
 	filter := func(a ble.Advertisement) bool {
-		return strings.ToUpper(a.Addr().String()) == strings.ToUpper(btleMacAddress)
+		return strings.ToUpper(a.Addr().String()) == strings.ToUpper(bleMacAddress)
 	}
 	duration := 30 * time.Second
 	ctx := ble.WithSigHandler(context.WithTimeout(context.Background(), duration))
 	cln, err := ble.Connect(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect : %s", err)
+	}
+	if cln != nil {
+		defer cln.CancelConnection()
 	}
 	// Make sure we had the chance to print out the message.
 	done := make(chan struct{})
@@ -46,7 +53,7 @@ func readBLEMeausurements(btleMacAddress string, characteristicUUID string) (*BL
 	// So we wait(detect) the disconnection in the go routine.
 	go func() {
 		<-cln.Disconnected()
-		fmt.Printf("BLE Client [%s] is disconnected \n", cln.Addr())
+		log.Printf("BLE Client [%s] is disconnected \n", cln.Addr())
 		close(done)
 	}()
 
@@ -70,23 +77,25 @@ func readBLEMeausurements(btleMacAddress string, characteristicUUID string) (*BL
 		RadonShortTerm: float32(binary.LittleEndian.Uint16(charVals[4:6])),
 		RadonLongTerm:  float32(binary.LittleEndian.Uint16(charVals[6:8])),
 	}
-
-	_ = cln.CancelConnection()
-	_ = d.Stop()
+	cln.CancelConnection()
+	log.Print("Waiting for BLE disconnect")
+	<-done
+	log.Print("BLE Disconnected")
 	return &measurements, nil
 }
 
-func startBLEMeasurementCollectorLoop(interval time.Duration, btleMacAddress string, characteristicUUID string, quit chan bool) chan BLEMeasurements {
+func startBLEMeasurementCollectorLoop(interval time.Duration, bleMacAddress string, characteristicUUID string, quit chan bool) chan BLEMeasurements {
+	log.Printf("Collecting BLE measurements every %v", interval)
 	ticker := time.NewTicker(interval)
 	dataChannel := make(chan BLEMeasurements)
-	go bleLoop(dataChannel, ticker, btleMacAddress, characteristicUUID, quit)
+	go bleLoop(dataChannel, ticker, bleMacAddress, characteristicUUID, quit)
 	return dataChannel
 }
 
-func bleLoop(measurements chan<- BLEMeasurements, ticker *time.Ticker, btleMacAddress string, characteristicUUID string, quit chan bool) {
+func bleLoop(measurements chan<- BLEMeasurements, ticker *time.Ticker, bleMacAddress string, characteristicUUID string, quit chan bool) {
 	log.Println("BLE Collector loop")
 	defer ticker.Stop()
-	m, err := readBLEMeausurements(btleMacAddress, characteristicUUID)
+	m, err := readBLEMeasurements(bleMacAddress, characteristicUUID)
 	if err != nil {
 		log.Printf("Error reading BLE readins: %v", err)
 	} else if m != nil {
@@ -96,7 +105,7 @@ L:
 	for {
 		select {
 		case <-ticker.C:
-			m, err := readBLEMeausurements(btleMacAddress, characteristicUUID)
+			m, err := readBLEMeasurements(bleMacAddress, characteristicUUID)
 			if err != nil {
 				log.Printf("Error reading BLE readins: %v", err)
 			} else if m != nil {

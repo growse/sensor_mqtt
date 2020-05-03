@@ -38,4 +38,5 @@ func onConnectHandler(client mqtt.Client) {
 
 func connectionLostHandler(client mqtt.Client, e error) {
 	log.Printf("MQTT connection lost: %v", e)
+	time.Sleep(5 * time.Second)
 }

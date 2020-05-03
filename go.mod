@@ -9,4 +9,5 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.2.0
 	github.com/go-ble/ble v0.0.0-20200120171844-0a73a9da88eb
 	github.com/spf13/viper v1.6.3
+	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 )
