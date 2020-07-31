@@ -28,7 +28,7 @@ dist/$(DEBNAME)_linux_%: $(wildcard *.go)
 
 $(DEBNAME)_$(DEBVERSION)_%.deb: dist/$(DEBNAME)_linux_%
 	chmod +x $<
-	bundle exec fpm -f -s dir -t deb -n $(DEBNAME) --description "$(APPDESCRIPTION)" --url $(APPURL) --deb-changelog CHANGELOG.md --prefix / -a $(DEB_$*_ARCH) -v $(DEBVERSION) --before-install deb_scripts/before_install.sh --before-upgrade deb_scripts/before_upgrade.sh --after-remove deb_scripts/after_remove.sh --after-install deb_scripts/after_install.sh --after-upgrade deb_scripts/after_upgrade.sh --deb-systemd sensor_mqtt.service --config-files /etc/sensor_mqtt/sensor_mqtt.yaml sensor_mqtt.yaml=/etc/sensor_mqtt/sensor_mqtt.yaml $<=/usr/bin/sensor_mqtt
+	bundle exec fpm -f -s dir -t deb -n $(DEBNAME) --description "$(APPDESCRIPTION)" --url $(APPURL) --deb-changelog CHANGELOG.md --prefix / -a $(DEB_$*_ARCH) -v $(DEBVERSION) -d libi2c0 --before-install deb_scripts/before_install.sh --before-upgrade deb_scripts/before_upgrade.sh --after-remove deb_scripts/after_remove.sh --after-install deb_scripts/after_install.sh --after-upgrade deb_scripts/after_upgrade.sh --deb-systemd sensor_mqtt.service --config-files /etc/sensor_mqtt/sensor_mqtt.yaml sensor_mqtt.yaml=/etc/sensor_mqtt/sensor_mqtt.yaml $<=/usr/bin/sensor_mqtt
 
 .PHONY: clean
 clean:
