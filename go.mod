@@ -8,6 +8,6 @@ require (
 	github.com/d2r2/go-logger v0.0.0-20181221090742-9998a510495e
 	github.com/eclipse/paho.mqtt.golang v1.2.0
 	github.com/go-ble/ble v0.0.0-20200120171844-0a73a9da88eb
-	github.com/spf13/viper v1.7.0
+	github.com/spf13/viper v1.7.1
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 )
