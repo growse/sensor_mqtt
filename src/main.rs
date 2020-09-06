@@ -23,6 +23,7 @@ struct Configuration {
     mqtt_username: String,
     mqtt_password: String,
     mqtt_topic_base: String,
+    device_name: String,
 }
 
 impl Default for Configuration {
@@ -34,6 +35,7 @@ impl Default for Configuration {
             mqtt_username: "".to_string(),
             mqtt_password: "".to_string(),
             mqtt_topic_base: "sensors".to_string(),
+            device_name: "".to_string(),
         }
     }
 }
@@ -72,9 +74,9 @@ fn main() {
     });
 
     let result = read_bme280(&config.i2c_bus_path)
-        .and_then(|measurements| map_measurements_to_messages(measurements, &config))
+        .and_then(|measurements| measurements_to_messages(measurements, &config))
         .and_then(|measurement_messages| {
-            get_homeassistant_discovery_messages().map(|mut messages| {
+            get_homeassistant_discovery_messages(&config).map(|mut messages| {
                 messages.extend(measurement_messages);
                 return messages;
             })
@@ -87,7 +89,7 @@ fn main() {
     }
 }
 
-fn map_measurements_to_messages(
+fn measurements_to_messages(
     measurements: Measurements<LinuxI2CError>,
     config: &Configuration,
 ) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
@@ -115,8 +117,14 @@ fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>, Box<dy
     Ok(m)
 }
 
-fn get_homeassistant_discovery_messages() -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
-    let state_topic = format!("homeassistant/sensor/{}/state", whoami::hostname());
+fn get_homeassistant_discovery_messages(
+    config: &Configuration,
+) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
+    let state_topic = format!(
+        "{topic_base}/{hostname}/state",
+        topic_base = config.mqtt_topic_base,
+        hostname = whoami::hostname()
+    );
     Ok(vec![
         MessageToPublish {
             topic: format!(
@@ -125,7 +133,7 @@ fn get_homeassistant_discovery_messages() -> Result<Vec<MessageToPublish>, Box<d
             ),
             payload: json!({
             "device_class": "temperature",
-            "name": "Temperature",
+            "name": format!("{} Temperature",config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "°C",
             "value_template": "{{ value_json.temperature}}"
@@ -140,9 +148,9 @@ fn get_homeassistant_discovery_messages() -> Result<Vec<MessageToPublish>, Box<d
             ),
             payload: json!({
             "device_class": "pressure",
-            "name": "Pressure",
+            "name": format!("{} Pressure",config.device_name),
             "state_topic": state_topic,
-            "unit_of_measurement": "hPa",
+            "unit_of_measurement": "Pa",
             "value_template": "{{ value_json.pressure}}"
             })
             .to_string(),
@@ -155,7 +163,7 @@ fn get_homeassistant_discovery_messages() -> Result<Vec<MessageToPublish>, Box<d
             ),
             payload: json!({
             "device_class": "humidity",
-            "name": "Humidity",
+            "name": format!("{} Humidity",config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "%",
             "value_template": "{{ value_json.humidity}}"
