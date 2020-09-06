@@ -66,7 +66,7 @@ fn main() {
     });
 
     let result = read_bme280(&config.i2c_bus_path)
-        .and_then(|measurements| send_to_mqtt(measurements, &config));
+        .and_then(|measurements| send_measurements_to_mqtt(measurements, &config));
 
     match result {
         Ok(_) => info!("GREAT SUCCESS"),
@@ -85,7 +85,7 @@ fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>, Box<dy
     Ok(m)
 }
 
-fn send_to_mqtt(
+fn send_measurements_to_mqtt(
     measurements: Measurements<LinuxI2CError>,
     config: &Configuration,
 ) -> Result<(), Box<dyn Error>> {
@@ -99,28 +99,15 @@ fn send_to_mqtt(
 
     let (mut client, mut connection) = Client::new(mqtt_options, 10);
 
-    let topics_and_measurements = [
-        (get_topic(config, "temperature"), measurements.temperature),
-        (get_topic(config, "pressure"), measurements.pressure),
-        (get_topic(config, "humidity"), measurements.humidity),
-    ];
+    let topic = format!(
+        "{topic_base}/{hostname}/state",
+        topic_base = config.mqtt_topic_base.as_str(),
+        hostname = whoami::hostname()
+    );
+    let payload = serde_json::to_string(&measurements)?;
 
-    let msgs = topics_and_measurements.len();
-    debug!("Will be publishing {} messages", msgs);
+    client.publish(topic, QoS::AtLeastOnce, false, payload.as_bytes())?;
 
-    for (topic, measurement) in topics_and_measurements.iter() {
-        let publish = client.publish(
-            topic,
-            QoS::AtLeastOnce,
-            false,
-            format!("{:.3}", measurement).as_bytes(),
-        );
-        if publish.is_err() {
-            return Err(publish.err().unwrap().into());
-        };
-    }
-
-    let mut messages_to_send = topics_and_measurements.len();
     for (_i, notification) in connection.iter().enumerate() {
         match notification {
             Ok(success_notification) => match success_notification {
@@ -128,10 +115,7 @@ fn send_to_mqtt(
                 (Some(Incoming::Connected), None) => println!("MQTT Connected"),
                 (Some(Incoming::PubAck(pub_ack)), None) => {
                     println!("MQTT published id={:?}", pub_ack.pkid);
-                    messages_to_send -= 1;
-                    if messages_to_send == 0 {
-                        break;
-                    }
+                    break;
                 }
                 (None, Some(outgoing)) => debug!("MQTT: Sent outgoing {:?}", outgoing),
                 (Some(incoming), None) => debug!("MQTT: Received incoming {:?}", incoming),
@@ -142,17 +126,7 @@ fn send_to_mqtt(
             }
         }
     }
-    debug!("All MQTT messages sent");
     Ok(())
-}
-
-fn get_topic(config: &Configuration, sensor_name: &str) -> String {
-    format!(
-        "{topic_base}/{hostname}/{sensor_name}",
-        topic_base = config.mqtt_topic_base.as_str(),
-        hostname = whoami::hostname(),
-        sensor_name = sensor_name
-    )
 }
 
 fn load_config() -> Result<Configuration, Box<dyn Error>> {

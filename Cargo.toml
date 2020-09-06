@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 
-bme280 = "0.2.1"
+bme280 = { version = "0.2.1", features = ["serde"] }
 linux-embedded-hal = "0.3.0"
 log = "0.4.11"
 rumqttc = "0.0.6"
@@ -16,3 +16,4 @@ confy = "0.4.0"
 serde_derive = "1.0.115"
 serde = { version = "1.0", features = ["derive"] }
 whoami = "0.9.0"
+serde_json = "1.0.57"
