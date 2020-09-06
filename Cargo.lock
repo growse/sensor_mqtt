@@ -724,6 +724,7 @@ dependencies = [
  "rumqttc",
  "serde",
  "serde_derive",
+ "whoami",
 ]
 
 [[package]]
@@ -1038,6 +1039,12 @@ dependencies = [
  "ring",
  "untrusted",
 ]
+
+[[package]]
+name = "whoami"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7884773ab69074615cb8f8425d0e53f11710786158704fca70f53e71b0e05504"
 
 [[package]]
 name = "winapi"

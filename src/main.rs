@@ -9,7 +9,7 @@ use bme280::{Measurements, BME280};
 use env_logger::Env;
 use i2cdev::linux::LinuxI2CError;
 use linux_embedded_hal::{Delay, I2cdev};
-use rumqttc::Incoming::PubAck;
+
 use rumqttc::{Client, Incoming, MqttOptions, Outgoing, QoS};
 use serde::export::Formatter;
 use serde_derive::{Deserialize, Serialize};
@@ -70,7 +70,7 @@ fn main() {
 
     match result {
         Ok(_) => info!("GREAT SUCCESS"),
-        Err(e) => error!("{}", e),
+        Err(e) => error!("{:?}", e),
     }
 }
 
@@ -86,7 +86,7 @@ fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>, Box<dy
 }
 
 fn send_to_mqtt(
-    _measurements: Measurements<LinuxI2CError>,
+    measurements: Measurements<LinuxI2CError>,
     config: &Configuration,
 ) -> Result<(), Box<dyn Error>> {
     let mut mqtt_options = MqttOptions::new(
@@ -97,38 +97,62 @@ fn send_to_mqtt(
 
     mqtt_options.set_credentials(config.mqtt_username.as_str(), config.mqtt_password.as_str());
 
-    let (mut client, mut connection) = Client::new(mqtt_options, 1);
+    let (mut client, mut connection) = Client::new(mqtt_options, 10);
 
-    let publish = client.publish(
-        format!(
-            "{topic_base}/{hostname}/{sensor_name}",
-            topic_base = config.mqtt_topic_base.as_str(),
-            hostname = "toot",
-            sensor_name = "parp"
-        ),
-        QoS::AtLeastOnce,
-        false,
-        "Hi".as_bytes(),
-    );
+    let topics_and_measurements = [
+        (get_topic(config, "temperature"), measurements.temperature),
+        (get_topic(config, "pressure"), measurements.pressure),
+        (get_topic(config, "humidity"), measurements.humidity),
+    ];
 
-    if publish.is_err() {
-        return Err(publish.err().unwrap().into());
-    };
+    let msgs = topics_and_measurements.len();
+    debug!("Will be publishing {} messages", msgs);
+
+    for (topic, measurement) in topics_and_measurements.iter() {
+        let publish = client.publish(
+            topic,
+            QoS::AtLeastOnce,
+            false,
+            format!("{:.3}", measurement).as_bytes(),
+        );
+        if publish.is_err() {
+            return Err(publish.err().unwrap().into());
+        };
+    }
+
+    let mut messages_to_send = topics_and_measurements.len();
     for (_i, notification) in connection.iter().enumerate() {
         match notification {
             Ok(success_notification) => match success_notification {
                 (None, Some(Outgoing::Publish(p))) => println!("Publishing MQTT... id={:?}", p),
                 (Some(Incoming::Connected), None) => println!("MQTT Connected"),
                 (Some(Incoming::PubAck(pub_ack)), None) => {
-                    println!("MQTT published id={:?}", pub_ack.pkid)
+                    println!("MQTT published id={:?}", pub_ack.pkid);
+                    messages_to_send -= 1;
+                    if messages_to_send == 0 {
+                        break;
+                    }
                 }
-                _ => println!("Shrug"),
+                (None, Some(outgoing)) => debug!("MQTT: Sent outgoing {:?}", outgoing),
+                (Some(incoming), None) => debug!("MQTT: Received incoming {:?}", incoming),
+                (incoming, outgoing) => debug!("MQTT: Unknown {:?} {:?}", incoming, outgoing),
             },
-            Err(e) => return Err(e.into()),
+            Err(e) => {
+                return Err(Box::new(e));
+            }
         }
     }
-
+    debug!("All MQTT messages sent");
     Ok(())
+}
+
+fn get_topic(config: &Configuration, sensor_name: &str) -> String {
+    format!(
+        "{topic_base}/{hostname}/{sensor_name}",
+        topic_base = config.mqtt_topic_base.as_str(),
+        hostname = whoami::hostname(),
+        sensor_name = sensor_name
+    )
 }
 
 fn load_config() -> Result<Configuration, Box<dyn Error>> {
