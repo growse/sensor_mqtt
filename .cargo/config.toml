@@ -1,5 +1,4 @@
-[build]
-target = "arm-unknown-linux-gnueabi"
-
-[target.arm-unknown-linux-gnueabi]
-linker = "arm-linux-gnueabi-gcc"
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
