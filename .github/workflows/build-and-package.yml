@@ -20,11 +20,11 @@ jobs:
           command: build
           use-cross: true
           args: --release  --target=arm-unknown-linux-gnueabi
-      - name: Upload binary
+      - name: Upload build artifact
         uses: actions/upload-artifact@v2
         with:
           name: target
-          path: dist/arm-unknown-linux-gnueabi/release/sensor_mqtt
+          path: target/arm-unknown-linux-gnueabi/release/sensor_mqtt
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
@@ -43,8 +43,6 @@ jobs:
           bundle install --jobs 4 --retry 3
       - name: Download build artifact
         uses: actions/download-artifact@v2
-        with:
-          name: target
       - name: Get Build number
         uses: einaregilsson/build-number@v1
         with:
