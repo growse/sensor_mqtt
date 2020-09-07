@@ -5,8 +5,6 @@ Description=Daemon to publish sensor metrics to MQTT
 Type=oneshot
 User=sensor_mqtt
 ExecStart=/usr/bin/sensor_mqtt
-Restart=always
-RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

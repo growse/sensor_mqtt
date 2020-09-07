@@ -1,74 +1,41 @@
-extern crate confy;
+extern crate config;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate serde_derive;
 
-use core::fmt;
-use serde_json::json;
 use std::error::Error;
 use std::process::exit;
 
-use bme280::{Measurements, BME280};
+use clap::Clap;
 use env_logger::Env;
-use i2cdev::linux::LinuxI2CError;
-use linux_embedded_hal::{Delay, I2cdev};
 use rumqttc::{Client, Incoming, MqttOptions, Outgoing, QoS};
-use serde::export::Formatter;
-use serde_derive::{Deserialize, Serialize};
+use serde_json::json;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct Configuration {
-    i2c_bus_path: String,
-    mqtt_host: String,
-    mqtt_port: u16,
-    mqtt_username: String,
-    mqtt_password: String,
-    mqtt_topic_base: String,
-    device_name: String,
+use crate::bme280::{measurements_to_messages, read_bme280};
+use crate::configuration::Configuration;
+
+mod bme280;
+mod configuration;
+
+#[derive(Clap)]
+#[clap(version = "0.2.0", about = "Publishes BM280 / BLE metrics over MQTT.")]
+struct Opts {
+    /// Sets a custom config file. Could have been an Option<T> with no default too
+    #[clap(short, long, default_value = "/etc/sensor_mqtt/sensor_mqtt.toml")]
+    config: String,
 }
 
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            i2c_bus_path: "/dev/i2c-1".to_string(),
-            mqtt_host: "localhost".to_string(),
-            mqtt_port: 1883,
-            mqtt_username: "".to_string(),
-            mqtt_password: "".to_string(),
-            mqtt_topic_base: "sensors".to_string(),
-            device_name: "".to_string(),
-        }
-    }
-}
-
-/*
-The bme280 crate doesn't implement Error for their errors, so we have to wrap
- */
-#[derive(Debug)]
-struct BME280ErrorWrapper(bme280::Error<LinuxI2CError>);
-
-impl fmt::Display for BME280ErrorWrapper {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match &self.0 {
-            bme280::Error::InvalidData => write!(f, "Invalid Data"),
-            bme280::Error::CompensationFailed => write!(f, "Compensation Failed"),
-            bme280::Error::NoCalibrationData => write!(f, "No Calibration Data"),
-            bme280::Error::UnsupportedChip => write!(f, "Unsupported Chip"),
-            bme280::Error::I2c(e) => write!(f, "I2c error {}", e),
-        }
-    }
-}
-
-impl Error for BME280ErrorWrapper {}
-
-struct MessageToPublish {
+pub struct MessageToPublish {
     topic: String,
     payload: String,
     retain: bool,
 }
 
 fn main() {
+    let opts = Opts::parse();
     env_logger::from_env(Env::default().default_filter_or("info")).init();
-    let config = load_config().unwrap_or_else(|e| {
+    let config = Configuration::new(&opts.config).unwrap_or_else(|e| {
         error!("Unable to load config: {}", e);
         exit(2)
     });
@@ -85,41 +52,15 @@ fn main() {
 
     match result {
         Ok(_) => info!("GREAT SUCCESS"),
-        Err(e) => error!("{:?}", e),
+        Err(e) => error!("{}", e),
     }
 }
-
-fn measurements_to_messages(
-    measurements: Measurements<LinuxI2CError>,
-    config: &Configuration,
-) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
-    let topic = format!(
-        "{topic_base}/{hostname}/state",
-        topic_base = config.mqtt_topic_base.as_str(),
-        hostname = whoami::hostname()
-    );
-    let payload = serde_json::to_string(&measurements)?;
-    Ok(vec![MessageToPublish {
-        topic,
-        payload,
-        retain: false,
-    }])
-}
-
-fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>, Box<dyn Error>> {
-    debug!("Reading i2c bus at {}", i2c_bus_path.clone());
-
-    let i2c_bus =
-        I2cdev::new(i2c_bus_path).map_err(|e| BME280ErrorWrapper(bme280::Error::I2c(e)))?;
-    let mut bme280 = BME280::new_primary(i2c_bus, Delay);
-    bme280.init().map_err(BME280ErrorWrapper)?;
-    let m = bme280.measure().map_err(BME280ErrorWrapper)?;
-    Ok(m)
-}
-
 fn get_homeassistant_discovery_messages(
     config: &Configuration,
 ) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
+    if !config.enable_homeassistant_discovery {
+        return Ok(vec![]);
+    }
     let state_topic = format!(
         "{topic_base}/{hostname}/state",
         topic_base = config.mqtt_topic_base,
@@ -190,7 +131,7 @@ fn send_measurements_to_mqtt(
     let (mut client, mut connection) = Client::new(mqtt_options, 10);
 
     let mut pending_messages = messages_to_publish.len();
-    debug!("Publishing {:?} messages", pending_messages);
+    debug!("Publishing {} messages", pending_messages);
 
     for x in messages_to_publish {
         client.publish(x.topic, QoS::AtLeastOnce, x.retain, x.payload.as_bytes())?;
@@ -199,8 +140,8 @@ fn send_measurements_to_mqtt(
     for (_i, notification) in connection.iter().enumerate() {
         match notification {
             Ok(success_notification) => match success_notification {
-                (None, Some(Outgoing::Publish(p))) => println!("Publishing MQTT... id={:?}", p),
-                (Some(Incoming::Connected), None) => println!("MQTT Connected"),
+                (None, Some(Outgoing::Publish(p))) => debug!("Publishing MQTT... id={}", p),
+                (Some(Incoming::Connected), None) => debug!("MQTT Connected"),
                 (Some(Incoming::PubAck(pub_ack)), None) => {
                     debug!("MQTT published id={:?}", pub_ack.pkid);
                     pending_messages -= 1;
@@ -218,9 +159,4 @@ fn send_measurements_to_mqtt(
         }
     }
     Ok(())
-}
-
-fn load_config() -> Result<Configuration, Box<dyn Error>> {
-    let config: Configuration = confy::load("sensor_mqtt")?;
-    Ok(config)
 }

@@ -2,3 +2,7 @@
 opt-level = 'z'
 lto = true
 codegen-units = 1
+panic = 'abort'
+
+[target.arm-unknown-linux-gnueabi]
+linker = "arm-linux-gnueabi-gcc"
