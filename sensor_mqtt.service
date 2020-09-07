@@ -2,7 +2,7 @@
 Description=Daemon to publish sensor metrics to MQTT
 
 [Service]
-Type=simple
+Type=oneshot
 User=sensor_mqtt
 ExecStart=/usr/bin/sensor_mqtt
 Restart=always

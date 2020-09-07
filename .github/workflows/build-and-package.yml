@@ -16,11 +16,11 @@ jobs:
           command: build
           use-cross: true
           args: --release  --target=arm-unknown-linux-gnueabi
-      - name: Upload site
-        uses: actions/upload-artifact@v1
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
         with:
-          name: dist
-          path: dist/
+          name: target
+          path: dist/arm-unknown-linux-gnueabi/release/sensor_mqtt
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
     needs: build
     steps:
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
       - name: Set up Ruby 2.6
         uses: actions/setup-ruby@v1
         with:
@@ -40,13 +40,19 @@ jobs:
       - name: Download site artifact
         uses: actions/download-artifact@v1
         with:
-          name: dist
+          name: target
       - name: Get Build number
         uses: einaregilsson/build-number@v1
         with:
           token: ${{secrets.github_token}}
       - name: Package
-        run: make package
+        run: bundle exec fpm -f -s dir -t deb -n $DEB_NAME --description "$APP_DESCRIPTION" --url $APP_URL --deb-changelog CHANGELOG.md --prefix / -a $(DEB_ARCH) -v $(DEB_VERSION) --before-install deb_scripts/before_install.sh --before-upgrade deb_scripts/before_upgrade.sh --after-remove deb_scripts/after_remove.sh --after-install deb_scripts/after_install.sh --after-upgrade deb_scripts/after_upgrade.sh --deb-systemd sensor_mqtt.service --config-files /etc/sensor_mqtt/sensor_mqtt.toml sensor_mqtt.toml=/etc/sensor_mqtt/sensor_mqtt.toml target/arm-unknown-linux/release/sensor_mqtt=/usr/bin/sensor_mqtt
+        env:
+          DEB_NAME: sensor_mqtt
+          APP_DESCRIPTION: Script to publish BME280 and BLE sensor metrics over MQTT
+          APP_URL: https://github.com/growse/sensor_mqtt
+          DEB_ARCH: armhf
+          DEB_VERSION: $(cat Cargo.toml | grep "^version = " | awk  '{gsub(/"/, "", $3); print $3}')-$BUILD_NUMBER
       - name: Upload to S3 Apt repo
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

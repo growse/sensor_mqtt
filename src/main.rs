@@ -136,7 +136,8 @@ fn get_homeassistant_discovery_messages(
             "name": format!("{} Temperature",config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "°C",
-            "value_template": "{{ value_json.temperature}}"
+            "value_template": "{{ value_json.temperature}}",
+            "expire_after": 300
             })
             .to_string(),
             retain: true,
@@ -151,7 +152,8 @@ fn get_homeassistant_discovery_messages(
             "name": format!("{} Pressure",config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "Pa",
-            "value_template": "{{ value_json.pressure}}"
+            "value_template": "{{ value_json.pressure}}",
+            "expire_after": 300
             })
             .to_string(),
             retain: true,
@@ -166,7 +168,8 @@ fn get_homeassistant_discovery_messages(
             "name": format!("{} Humidity",config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "%",
-            "value_template": "{{ value_json.humidity}}"
+            "value_template": "{{ value_json.humidity}}",
+            "expire_after": 300
             })
             .to_string(),
             retain: true,

@@ -1,0 +1,7 @@
+i2c_bus_path = '/dev/i2c-1'
+mqtt_host = "example.com"
+mqtt_port = 1883
+mqtt_username = ""
+mqtt_password = ""
+mqtt_topic_base = "sensors"
+device_name = "My First Device"
