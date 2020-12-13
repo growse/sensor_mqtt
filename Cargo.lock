@@ -88,7 +88,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc93357f2a5603736e2c1f1ba8e18e9ec80efa7fdade5d6a37c11362b76363f4"
 dependencies = [
  "embedded-hal",
- "serde 1.0.115",
+ "serde 1.0.118",
 ]
 
 [[package]]
@@ -186,7 +186,7 @@ dependencies = [
  "lazy_static",
  "nom",
  "rust-ini",
- "serde 1.0.115",
+ "serde 1.0.118",
  "serde-hjson",
  "serde_json",
  "toml",
@@ -805,7 +805,7 @@ dependencies = [
  "linux-embedded-hal",
  "log",
  "rumqttc",
- "serde 1.0.115",
+ "serde 1.0.118",
  "serde_derive",
  "serde_json",
  "whoami",
@@ -819,9 +819,9 @@ checksum = "9dad3f759919b92c3068c696c15c3d17238234498bbdcc80f2c469606f948ac8"
 
 [[package]]
 name = "serde"
-version = "1.0.115"
+version = "1.0.118"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e54c9a88f2da7238af84b5101443f0c0d0a3bbdc455e34a5c9497b1903ed55d5"
+checksum = "06c64263859d87aa2eb554587e2d23183398d617427327cf2b3d0ed8c69e4800"
 dependencies = [
  "serde_derive",
 ]
@@ -841,9 +841,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.115"
+version = "1.0.118"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "609feed1d0a73cc36a0182a840a9b37b4a82f0b1150369f0536a9e3f2a31dc48"
+checksum = "c84d3526699cd55261af4b941e4e725444df67aa4f9e6a3564f18030d12672df"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -858,7 +858,7 @@ checksum = "164eacbdb13512ec2745fb09d51fd5b22b0d65ed294a1dcf7285a360c80a675c"
 dependencies = [
  "itoa",
  "ryu",
- "serde 1.0.115",
+ "serde 1.0.118",
 ]
 
 [[package]]
@@ -1088,7 +1088,7 @@ version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffc92d160b1eef40665be3a05630d003936a3bc7da7421277846c2613e92c71a"
 dependencies = [
- "serde 1.0.115",
+ "serde 1.0.118",
 ]
 
 [[package]]
