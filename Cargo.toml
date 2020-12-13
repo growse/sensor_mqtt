@@ -13,7 +13,7 @@ rumqttc = "0.0.6"
 env_logger = "0.8.2"
 i2cdev = "0.4.4"
 config = "0.10.1"
-clap = "3.0.0-beta.1"
+clap = "3.0.0-beta.2"
 serde_derive = "1.0.115"
 serde = { version = "1.0", features = ["derive"] }
 whoami = "1.0.0"
