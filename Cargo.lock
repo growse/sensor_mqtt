@@ -1193,9 +1193,9 @@ dependencies = [
 
 [[package]]
 name = "whoami"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e35495e7faf4c657051a8e9725d9c37ac57879e915be3ed55bb401af84382035"
+checksum = "ed7732dffd05e6971a2d8078ab76d8163cc9d13d76385eb3126f1872260a7257"
 dependencies = [
  "wasm-bindgen",
  "web-sys",
