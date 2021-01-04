@@ -34,7 +34,7 @@ pub struct MessageToPublish {
 
 fn main() {
     let opts = Opts::parse();
-    env_logger::from_env(Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let config = Configuration::new(&opts.config).unwrap_or_else(|e| {
         error!("Unable to load config: {}", e);
         exit(2)
@@ -123,7 +123,7 @@ fn send_measurements_to_mqtt(
     config: &Configuration,
 ) -> Result<(), Box<dyn Error>> {
     let mut mqtt_options = MqttOptions::new(
-        "sensor-mqtt-client",
+        format!("sensor-mqtt-client-{}", config.device_name),
         config.mqtt_host.as_str(),
         config.mqtt_port,
     );
