@@ -8,7 +8,7 @@ edition = "2018"
 
 bme280 = { version = "0.2.1", features = ["serde"] }
 linux-embedded-hal = "0.3.0"
-log = "0.4.11"
+log = "0.4.13"
 rumqttc = "0.0.6"
 env_logger = "0.8.2"
 i2cdev = "0.4.4"
