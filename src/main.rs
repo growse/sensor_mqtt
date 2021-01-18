@@ -9,11 +9,12 @@ use std::process::exit;
 
 use clap::Clap;
 use env_logger::Env;
-use rumqttc::{Client, Incoming, MqttOptions, Outgoing, QoS};
 use serde_json::json;
 
 use crate::bme280::{measurements_to_messages, read_bme280};
 use crate::configuration::Configuration;
+use rumqttc::Outgoing::PubAck;
+use rumqttc::{Client, Event, MqttOptions, Packet, QoS};
 
 mod bme280;
 mod configuration;
@@ -35,35 +36,38 @@ pub struct MessageToPublish {
 fn main() {
     let opts = Opts::parse();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    let config = Configuration::new(&opts.config).unwrap_or_else(|e| {
+    let this_config = Configuration::new(&opts.config).unwrap_or_else(|e| {
         error!("Unable to load config: {}", e);
         exit(2)
     });
 
-    let result = read_bme280(&config.i2c_bus_path)
-        .and_then(|measurements| measurements_to_messages(measurements, &config))
+    let result = read_bme280(&this_config.i2c_bus_path)
+        .and_then(|measurements| measurements_to_messages(measurements, &this_config))
         .and_then(|measurement_messages| {
-            get_homeassistant_discovery_messages(&config).map(|mut messages| {
+            get_homeassistant_discovery_messages(&this_config).map(|mut messages| {
                 messages.extend(measurement_messages);
                 return messages;
             })
         })
-        .and_then(|messages_to_publish| send_measurements_to_mqtt(messages_to_publish, &config));
+        .and_then(|messages_to_publish| {
+            send_measurements_to_mqtt(messages_to_publish, &this_config)
+        });
 
     match result {
         Ok(_) => info!("GREAT SUCCESS"),
         Err(e) => error!("{}", e),
     }
 }
+
 fn get_homeassistant_discovery_messages(
-    config: &Configuration,
+    this_config: &Configuration,
 ) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
-    if !config.enable_homeassistant_discovery {
+    if !this_config.enable_homeassistant_discovery {
         return Ok(vec![]);
     }
     let state_topic = format!(
         "{topic_base}/{hostname}/state",
-        topic_base = config.mqtt_topic_base,
+        topic_base = this_config.mqtt_topic_base,
         hostname = whoami::hostname()
     );
     Ok(vec![
@@ -74,7 +78,7 @@ fn get_homeassistant_discovery_messages(
             ),
             payload: json!({
             "device_class": "temperature",
-            "name": format!("{} Temperature",config.device_name),
+            "name": format!("{} Temperature",this_config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "°C",
             "value_template": "{{ value_json.temperature}}",
@@ -90,7 +94,7 @@ fn get_homeassistant_discovery_messages(
             ),
             payload: json!({
             "device_class": "pressure",
-            "name": format!("{} Pressure",config.device_name),
+            "name": format!("{} Pressure",this_config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "Pa",
             "value_template": "{{ value_json.pressure}}",
@@ -106,7 +110,7 @@ fn get_homeassistant_discovery_messages(
             ),
             payload: json!({
             "device_class": "humidity",
-            "name": format!("{} Humidity",config.device_name),
+            "name": format!("{} Humidity",this_config.device_name),
             "state_topic": state_topic,
             "unit_of_measurement": "%",
             "value_template": "{{ value_json.humidity}}",
@@ -120,14 +124,17 @@ fn get_homeassistant_discovery_messages(
 
 fn send_measurements_to_mqtt(
     messages_to_publish: Vec<MessageToPublish>,
-    config: &Configuration,
+    this_config: &Configuration,
 ) -> Result<(), Box<dyn Error>> {
     let mut mqtt_options = MqttOptions::new(
-        format!("sensor-mqtt-client-{}", config.device_name),
-        config.mqtt_host.as_str(),
-        config.mqtt_port,
+        format!("sensor-mqtt-client-{}", this_config.device_name),
+        this_config.mqtt_host.as_str(),
+        this_config.mqtt_port,
     );
-    mqtt_options.set_credentials(config.mqtt_username.as_str(), config.mqtt_password.as_str());
+    mqtt_options.set_credentials(
+        this_config.mqtt_username.as_str(),
+        this_config.mqtt_password.as_str(),
+    );
     let (mut client, mut connection) = Client::new(mqtt_options, 10);
 
     let mut pending_messages = messages_to_publish.len();
@@ -139,24 +146,26 @@ fn send_measurements_to_mqtt(
 
     for (_i, notification) in connection.iter().enumerate() {
         match notification {
-            Ok(success_notification) => match success_notification {
-                (None, Some(Outgoing::Publish(p))) => debug!("Publishing MQTT... id={}", p),
-                (Some(Incoming::Connected), None) => debug!("MQTT Connected"),
-                (Some(Incoming::PubAck(pub_ack)), None) => {
+            Ok(Event::Outgoing(outgoing)) => match outgoing {
+                PubAck(p) => debug!("Publishing MQTT... id={}", p),
+                outgoing => debug!("MQTT: Sent outgoing {:?}", outgoing),
+            },
+            Ok(Event::Incoming(incoming)) => match incoming {
+                Packet::ConnAck(_) => debug!("MQTT Connected"),
+                Packet::PubAck(pub_ack) => {
                     debug!("MQTT published id={:?}", pub_ack.pkid);
                     pending_messages -= 1;
                     if pending_messages == 0 {
                         break;
                     }
                 }
-                (None, Some(outgoing)) => debug!("MQTT: Sent outgoing {:?}", outgoing),
-                (Some(incoming), None) => debug!("MQTT: Received incoming {:?}", incoming),
-                (incoming, outgoing) => debug!("MQTT: Unknown {:?} {:?}", incoming, outgoing),
+                incoming => debug!("MQTT: Received incoming {:?}", incoming),
             },
             Err(e) => {
                 return Err(Box::new(e));
             }
         }
     }
+    client.disconnect()?;
     Ok(())
 }
