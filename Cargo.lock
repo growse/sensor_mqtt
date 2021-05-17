@@ -406,9 +406,9 @@ dependencies = [
 
 [[package]]
 name = "mqttbytes"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "684f731456d8e130ee44024e826ba256302e8e151bd0335c628566747467792f"
+checksum = "11df9e74db0d738afc4db843d97d573873d4801af8f2978ab91f6539c4328ac0"
 dependencies = [
  "bytes",
 ]
@@ -621,9 +621,9 @@ dependencies = [
 
 [[package]]
 name = "rumqttc"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de758d1b983dc386aa083ab91e8c774415364fe236a2808fdf95d5d54c7e5e93"
+checksum = "fb20c80c2d4bc82dee09ee8f1ff76a6845050ece6224fff6900dc91b065f4547"
 dependencies = [
  "async-channel",
  "bytes",
