@@ -11,7 +11,7 @@ linux-embedded-hal = "0.3.0"
 
 log = "0.4"
 rumqttc = "0.7"
-env_logger = "0.8"
+env_logger = "0.9"
 i2cdev = "0.4"
 config = "0.11"
 clap = "3.0.0-beta.2"
