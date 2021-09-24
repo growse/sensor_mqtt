@@ -5,11 +5,11 @@ use crate::configuration::Configuration;
 use crate::MessageToPublish;
 use bme280::{Measurements, BME280};
 use core::fmt;
-use i2cdev::linux::LinuxI2CError;
 
 use linux_embedded_hal::{Delay, I2cdev};
 use std::error::Error;
 use std::fmt::Formatter;
+use linux_embedded_hal::i2cdev::linux::LinuxI2CError;
 
 #[derive(Debug)]
 pub struct BME280ErrorWrapper(pub bme280::Error<LinuxI2CError>);
