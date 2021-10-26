@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 
 bme280 = { version = "0.2.1", features = ["serde"] }
-linux-embedded-hal = "0.3.1"
+linux-embedded-hal = "0.3.2"
 
 log = "0.4"
 rumqttc = "0.9"
