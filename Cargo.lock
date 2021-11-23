@@ -212,7 +212,7 @@ checksum = "bff941d54b0751ff802f999a4d7bb3a295b9d0d04818fcd0ede802b3d3b8a47e"
 dependencies = [
  "bitflags",
  "libc",
- "nix",
+ "nix 0.22.0",
 ]
 
 [[package]]
@@ -258,14 +258,14 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "i2cdev"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa6add3ad7531c7d496b1e1991a5b3cda2fb4fabd95cc44d995eb5d962d60f03"
+checksum = "b8fe61341e9ce588ede54fd131bf0df63eed3c6e45fcc7fa0e548ea176f39358"
 dependencies = [
  "bitflags",
  "byteorder",
  "libc",
- "nix",
+ "nix 0.23.0",
 ]
 
 [[package]]
@@ -426,6 +426,19 @@ name = "nix"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1e25ee6b412c2a1e3fcb6a4499a5c1bfe7f43e014bdce9a6b6666e5aa2d187"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
+ "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f305c2c2e4c39a82f7bf0bf65fb557f9070ce06781d4f2454295cc34b1c43188"
 dependencies = [
  "bitflags",
  "cc",
@@ -719,7 +732,7 @@ checksum = "1e63d0d8a5d78aed00599555b5f5c80de8c0d942a365357b896e47029a19cc30"
 dependencies = [
  "bitflags",
  "libc",
- "nix",
+ "nix 0.22.0",
 ]
 
 [[package]]
@@ -757,7 +770,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cea7ba0f212e0f56cf5f195a88e9b7c74fbbc03b8e16d009413bc8c89c63f7c7"
 dependencies = [
- "nix",
+ "nix 0.22.0",
 ]
 
 [[package]]
