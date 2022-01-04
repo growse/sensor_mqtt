@@ -3,11 +3,11 @@ extern crate config;
 extern crate log;
 #[macro_use]
 extern crate serde_derive;
+use clap::Parser;
 
 use std::error::Error;
 use std::process::exit;
 
-use clap::Clap;
 use env_logger::Env;
 use serde_json::json;
 
@@ -19,9 +19,9 @@ use rumqttc::{Client, Event, MqttOptions, Packet, QoS};
 mod bme280;
 mod configuration;
 
-#[derive(Clap)]
-#[clap(version = "0.2.0", about = "Publishes BM280 / BLE metrics over MQTT.")]
-struct Opts {
+#[derive(Parser, Debug)]
+#[clap(version, author)]
+struct Args {
     /// Sets a custom config file. Could have been an Option<T> with no default too
     #[clap(short, long, default_value = "/etc/sensor_mqtt/sensor_mqtt.toml")]
     config: String,
@@ -34,7 +34,7 @@ pub struct MessageToPublish {
 }
 
 fn main() {
-    let opts = Opts::parse();
+    let opts = Args::parse();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let this_config = Configuration::new(&opts.config).unwrap_or_else(|e| {
         error!("Unable to load config: {}", e);
