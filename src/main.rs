@@ -3,21 +3,22 @@ extern crate config;
 extern crate log;
 #[macro_use]
 extern crate serde_derive;
-use clap::Parser;
 
-use std::error::Error;
 use std::process::exit;
 
+use anyhow::{anyhow, Result};
+use clap::Parser;
 use env_logger::Env;
-use serde_json::json;
-
-use crate::bme280::{measurements_to_messages, read_bme280};
-use crate::configuration::Configuration;
 use rumqttc::Outgoing::PubAck;
 use rumqttc::{Client, Event, MqttOptions, Packet, QoS};
 
+use crate::bme280::{measurements_to_messages, read_bme280};
+use crate::configuration::Configuration;
+use crate::homeassistant::get_homeassistant_discovery_messages;
+
 mod bme280;
 mod configuration;
+mod homeassistant;
 
 #[derive(Parser, Debug)]
 #[clap(version, author)]
@@ -33,7 +34,8 @@ pub struct MessageToPublish {
     retain: bool,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<()> {
     let opts = Args::parse();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let this_config = Configuration::new(&opts.config).unwrap_or_else(|e| {
@@ -41,7 +43,7 @@ fn main() {
         exit(2)
     });
 
-    let result = read_bme280(&this_config.i2c_bus_path)
+    read_bme280(&this_config.i2c_bus_path)
         .and_then(|measurements| measurements_to_messages(measurements, &this_config))
         .and_then(|measurement_messages| {
             get_homeassistant_discovery_messages(&this_config).map(|mut messages| {
@@ -51,81 +53,13 @@ fn main() {
         })
         .and_then(|messages_to_publish| {
             send_measurements_to_mqtt(messages_to_publish, &this_config)
-        });
-
-    match result {
-        Ok(_) => info!("GREAT SUCCESS"),
-        Err(e) => error!("{}", e),
-    }
-}
-
-fn get_homeassistant_discovery_messages(
-    this_config: &Configuration,
-) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
-    if !this_config.enable_homeassistant_discovery {
-        return Ok(vec![]);
-    }
-    let state_topic = format!(
-        "{topic_base}/{hostname}/state",
-        topic_base = this_config.mqtt_topic_base,
-        hostname = whoami::hostname()
-    );
-    Ok(vec![
-        MessageToPublish {
-            topic: format!(
-                "homeassistant/sensor/{}_temperature/config",
-                whoami::hostname()
-            ),
-            payload: json!({
-            "device_class": "temperature",
-            "name": format!("{} Temperature",this_config.device_name),
-            "state_topic": state_topic,
-            "unit_of_measurement": "°C",
-            "value_template": "{{ value_json.temperature}}",
-            "expire_after": 300
-            })
-            .to_string(),
-            retain: true,
-        },
-        MessageToPublish {
-            topic: format!(
-                "homeassistant/sensor/{}_pressure/config",
-                whoami::hostname()
-            ),
-            payload: json!({
-            "device_class": "pressure",
-            "name": format!("{} Pressure",this_config.device_name),
-            "state_topic": state_topic,
-            "unit_of_measurement": "Pa",
-            "value_template": "{{ value_json.pressure}}",
-            "expire_after": 300
-            })
-            .to_string(),
-            retain: true,
-        },
-        MessageToPublish {
-            topic: format!(
-                "homeassistant/sensor/{}_humidity/config",
-                whoami::hostname()
-            ),
-            payload: json!({
-            "device_class": "humidity",
-            "name": format!("{} Humidity",this_config.device_name),
-            "state_topic": state_topic,
-            "unit_of_measurement": "%",
-            "value_template": "{{ value_json.humidity}}",
-            "expire_after": 300
-            })
-            .to_string(),
-            retain: true,
-        },
-    ])
+        })
 }
 
 fn send_measurements_to_mqtt(
     messages_to_publish: Vec<MessageToPublish>,
     this_config: &Configuration,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let mut mqtt_options = MqttOptions::new(
         format!("sensor-mqtt-client-{}", this_config.device_name),
         this_config.mqtt_host.as_str(),
@@ -161,9 +95,7 @@ fn send_measurements_to_mqtt(
                 }
                 incoming => debug!("MQTT: Received incoming {:?}", incoming),
             },
-            Err(e) => {
-                return Err(Box::new(e));
-            }
+            Err(e) => return Err(anyhow!(e)),
         }
     }
     client.disconnect()?;
