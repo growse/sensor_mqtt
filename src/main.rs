@@ -5,9 +5,9 @@ extern crate log;
 extern crate serde_derive;
 use clap::Parser;
 
-use std::error::Error;
 use std::process::exit;
 
+use anyhow::Result;
 use env_logger::Env;
 use serde_json::json;
 
@@ -33,7 +33,8 @@ pub struct MessageToPublish {
     retain: bool,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<()> {
     let opts = Args::parse();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let this_config = Configuration::new(&opts.config).unwrap_or_else(|e| {
@@ -41,7 +42,7 @@ fn main() {
         exit(2)
     });
 
-    let result = read_bme280(&this_config.i2c_bus_path)
+    read_bme280(&this_config.i2c_bus_path)
         .and_then(|measurements| measurements_to_messages(measurements, &this_config))
         .and_then(|measurement_messages| {
             get_homeassistant_discovery_messages(&this_config).map(|mut messages| {
@@ -51,17 +52,12 @@ fn main() {
         })
         .and_then(|messages_to_publish| {
             send_measurements_to_mqtt(messages_to_publish, &this_config)
-        });
-
-    match result {
-        Ok(_) => info!("GREAT SUCCESS"),
-        Err(e) => error!("{}", e),
-    }
+        })
 }
 
 fn get_homeassistant_discovery_messages(
     this_config: &Configuration,
-) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
+) -> Result<Vec<MessageToPublish>> {
     if !this_config.enable_homeassistant_discovery {
         return Ok(vec![]);
     }
@@ -125,7 +121,7 @@ fn get_homeassistant_discovery_messages(
 fn send_measurements_to_mqtt(
     messages_to_publish: Vec<MessageToPublish>,
     this_config: &Configuration,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let mut mqtt_options = MqttOptions::new(
         format!("sensor-mqtt-client-{}", this_config.device_name),
         this_config.mqtt_host.as_str(),
@@ -162,7 +158,7 @@ fn send_measurements_to_mqtt(
                 incoming => debug!("MQTT: Received incoming {:?}", incoming),
             },
             Err(e) => {
-                return Err(Box::new(e));
+                return Err(e.into())
             }
         }
     }

@@ -5,6 +5,7 @@ authors = ["Andrew Rowson <github@growse.com>"]
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.51"
 bme280 = { version = "0.2.1", features = ["serde"] }
 linux-embedded-hal = "0.3.2"
 log = "0.4"
@@ -17,3 +18,4 @@ serde_derive = "1"
 serde = { version = "1.0", features = ["derive"] }
 whoami = "1"
 serde_json = "1"
+tokio = { version = "1.14.0", features = ["rt-multi-thread","time","macros"] }

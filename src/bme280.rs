@@ -6,6 +6,7 @@ use crate::MessageToPublish;
 use bme280::{Measurements, BME280};
 use core::fmt;
 
+use anyhow::Result;
 use linux_embedded_hal::i2cdev::linux::LinuxI2CError;
 use linux_embedded_hal::{Delay, I2cdev};
 use std::error::Error;
@@ -28,7 +29,7 @@ impl fmt::Display for BME280ErrorWrapper {
 
 impl Error for BME280ErrorWrapper {}
 
-pub fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>, Box<dyn Error>> {
+pub fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>> {
     debug!("Reading i2c bus at {}", i2c_bus_path.clone());
     let i2c_bus =
         I2cdev::new(i2c_bus_path).map_err(|e| BME280ErrorWrapper(bme280::Error::I2c(e)))?;
@@ -41,7 +42,7 @@ pub fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>, Bo
 pub fn measurements_to_messages(
     measurements: Measurements<LinuxI2CError>,
     config: &Configuration,
-) -> Result<Vec<MessageToPublish>, Box<dyn Error>> {
+) -> Result<Vec<MessageToPublish>> {
     let topic = format!(
         "{topic_base}/{hostname}/state",
         topic_base = config.mqtt_topic_base.as_str(),
