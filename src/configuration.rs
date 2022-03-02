@@ -1,5 +1,5 @@
-use config::{Config, ConfigError};
-
+use anyhow::Result;
+use config::{Config};
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct Configuration {
@@ -29,12 +29,11 @@ impl Default for Configuration {
 }
 
 impl Configuration {
-    pub(crate) fn new(path: &str) -> Result<Self, ConfigError> {
-        let mut config = Config::new();
-        let result = config.merge(config::File::with_name(path));
-        if result.is_err() {
-            warn!("Unable to load config from {}", path);
-        }
-        config.try_into()
+    pub(crate) fn new(path: &str) -> Result<Self> {
+        Config::builder()
+            .add_source(config::File::with_name(path))
+            .build()
+            .and_then(|c| c.try_deserialize())
+            .map_err(|e| e.into())
     }
 }

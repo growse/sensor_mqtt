@@ -157,9 +157,7 @@ fn send_measurements_to_mqtt(
                 }
                 incoming => debug!("MQTT: Received incoming {:?}", incoming),
             },
-            Err(e) => {
-                return Err(e.into())
-            }
+            Err(e) => return Err(e.into()),
         }
     }
     client.disconnect()?;
