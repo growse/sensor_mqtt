@@ -5,7 +5,7 @@ authors = ["Andrew Rowson <github@growse.com>"]
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.55"
 bme280 = { version = "0.2.1", features = ["serde"] }
 linux-embedded-hal = "0.3.2"
 log = "0.4"
