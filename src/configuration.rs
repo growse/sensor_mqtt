@@ -1,5 +1,5 @@
 use anyhow::Result;
-use config::{Config};
+use config::Config;
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct Configuration {
