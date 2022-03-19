@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
         .and_then(|measurement_messages| {
             get_homeassistant_discovery_messages(&this_config).map(|mut messages| {
                 messages.extend(measurement_messages);
-                return messages;
+                messages
             })
         })
         .and_then(|messages_to_publish| {
