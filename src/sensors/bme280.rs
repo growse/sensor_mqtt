@@ -11,6 +11,7 @@ use linux_embedded_hal::i2cdev::linux::LinuxI2CError;
 use linux_embedded_hal::{Delay, I2cdev};
 
 use crate::configuration::Configuration;
+use crate::sensors::sensor::Sensor;
 use crate::MessageToPublish;
 
 #[derive(Debug)]
@@ -30,29 +31,20 @@ impl fmt::Display for BME280ErrorWrapper {
 
 impl Error for BME280ErrorWrapper {}
 
-pub fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>> {
-    debug!("Reading i2c bus at {}", i2c_bus_path.clone());
-    let i2c_bus =
-        I2cdev::new(i2c_bus_path).map_err(|e| BME280ErrorWrapper(bme280::Error::I2c(e)))?;
-    let mut bme280 = BME280::new_primary(i2c_bus, Delay);
-    bme280.init().map_err(BME280ErrorWrapper)?;
-    let m = bme280.measure().map_err(BME280ErrorWrapper)?;
-    Ok(m)
+struct BME280Sensor {
+    i2c_bus_path: String,
 }
 
-pub fn measurements_to_messages(
-    measurements: Measurements<LinuxI2CError>,
-    config: &Configuration,
-) -> Result<Vec<MessageToPublish>> {
-    let topic = format!(
-        "{topic_base}/{hostname}/state",
-        topic_base = config.mqtt_topic_base.as_str(),
-        hostname = whoami::hostname()
-    );
-    let payload = serde_json::to_string(&measurements)?;
-    Ok(vec![MessageToPublish {
-        topic,
-        payload,
-        retain: false,
-    }])
+impl Sensor for BME280Sensor {
+    fn measure(&self) -> Result<crate::sensors::sensor::Measurements> {
+        debug!("Reading i2c bus at {}", i2c_bus_path.clone());
+        let i2c_bus =
+            I2cdev::new(i2c_bus_path).map_err(|e| BME280ErrorWrapper(bme280::Error::I2c(e)))?;
+        let mut bme280 = BME280::new_primary(i2c_bus, Delay);
+        bme280.init().map_err(BME280ErrorWrapper)?;
+        let m = bme280.measure().map_err(BME280ErrorWrapper)?;
+        Ok(m)
+    }
 }
+
+pub fn read_measurements(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>> {}
