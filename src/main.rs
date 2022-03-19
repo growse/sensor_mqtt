@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     let opts = Args::parse();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let this_config = Configuration::new(&opts.config).unwrap_or_else(|e| {
-        error!("Unable to load config: {}", e);
+        error!("Unable to load config: {e}");
         exit(2)
     });
 
@@ -134,7 +134,7 @@ fn send_measurements_to_mqtt(
     let (mut client, mut connection) = Client::new(mqtt_options, 10);
 
     let mut pending_messages = messages_to_publish.len();
-    debug!("Publishing {} messages", pending_messages);
+    debug!("Publishing {pending_messages} messages");
 
     for x in messages_to_publish {
         client.publish(x.topic, QoS::AtLeastOnce, x.retain, x.payload.as_bytes())?;
@@ -143,7 +143,7 @@ fn send_measurements_to_mqtt(
     for (_i, notification) in connection.iter().enumerate() {
         match notification {
             Ok(Event::Outgoing(outgoing)) => match outgoing {
-                PubAck(p) => debug!("Publishing MQTT... id={}", p),
+                PubAck(p) => debug!("Publishing MQTT... id={p}"),
                 outgoing => debug!("MQTT: Sent outgoing {:?}", outgoing),
             },
             Ok(Event::Incoming(incoming)) => match incoming {

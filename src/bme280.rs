@@ -30,7 +30,7 @@ impl fmt::Display for BME280ErrorWrapper {
 impl Error for BME280ErrorWrapper {}
 
 pub fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<LinuxI2CError>> {
-    debug!("Reading i2c bus at {}", i2c_bus_path);
+    debug!("Reading i2c bus at {i2c_bus_path}");
     let i2c_bus =
         I2cdev::new(i2c_bus_path).map_err(|e| BME280ErrorWrapper(bme280::Error::I2c(e)))?;
     let mut bme280 = BME280::new_primary(i2c_bus, Delay);
