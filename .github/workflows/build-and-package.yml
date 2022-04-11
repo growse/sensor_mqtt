@@ -4,7 +4,7 @@ on:
     branches:
       - main
   pull_request:
-    
+
 jobs:
   build:
     name: Build
@@ -25,10 +25,9 @@ jobs:
         with:
           name: target
           path: target/**/sensor_mqtt
-  deploy:
-    name: Deploy
+  build-package:
+    name: Build Deb Package
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
     needs: build
     steps:
       - name: Check out code
@@ -55,6 +54,21 @@ jobs:
           APP_DESCRIPTION: Script to publish BME280 and BLE sensor metrics over MQTT
           APP_URL: https://github.com/growse/sensor_mqtt
           DEB_ARCH: armhf
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: deb-package
+          path: "*.deb"
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    needs: build-package
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: deb-package
       - name: Upload to Apt repo
         env:
           APT_CREDENTIALS: ${{ secrets.APT_CREDENTIALS }}
