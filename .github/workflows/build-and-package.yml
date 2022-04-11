@@ -21,7 +21,7 @@ jobs:
           use-cross: true
           args: --release --target=arm-unknown-linux-gnueabi
       - name: Upload build artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: target
           path: target/**/sensor_mqtt
