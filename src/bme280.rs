@@ -5,7 +5,7 @@ use crate::configuration::Configuration;
 use crate::MessageToPublish;
 use core::fmt;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use bme280::i2c::BME280;
 use bme280::Measurements;
 use linux_embedded_hal::{Delay, I2CError, I2cdev};
@@ -29,7 +29,7 @@ impl fmt::Display for BME280ErrorWrapper {
 
 impl Error for BME280ErrorWrapper {}
 
-pub fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<I2CError>> {
+pub async fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<I2CError>> {
     debug!("Reading i2c bus at {i2c_bus_path}");
     let i2c_bus = I2cdev::new(i2c_bus_path)?;
     let mut bme280 = BME280::new_primary(i2c_bus);
@@ -39,7 +39,7 @@ pub fn read_bme280(i2c_bus_path: &str) -> Result<Measurements<I2CError>> {
     Ok(m)
 }
 
-pub fn measurements_to_messages(
+pub async fn measurements_to_messages(
     measurements: Measurements<I2CError>,
     config: &Configuration,
 ) -> Result<Vec<MessageToPublish>> {

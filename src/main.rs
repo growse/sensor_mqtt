@@ -3,18 +3,19 @@ extern crate config;
 extern crate log;
 #[macro_use]
 extern crate serde_derive;
-use clap::Parser;
 
 use std::process::exit;
 
 use anyhow::Result;
+use clap::Parser;
 use env_logger::Env;
+use futures::{FutureExt, StreamExt, TryFutureExt};
+use rumqttc::Outgoing::PubAck;
+use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use serde_json::json;
 
 use crate::bme280::{measurements_to_messages, read_bme280};
 use crate::configuration::Configuration;
-use rumqttc::Outgoing::PubAck;
-use rumqttc::{Client, Event, MqttOptions, Packet, QoS};
 
 mod bme280;
 mod configuration;
@@ -42,9 +43,9 @@ async fn main() -> Result<()> {
         exit(2)
     });
 
-    read_bme280(&this_config.i2c_bus_path)
+    read_bme280((&this_config.i2c_bus_path).as_ref())
         .and_then(|measurements| measurements_to_messages(measurements, &this_config))
-        .and_then(|measurement_messages| {
+        .and_then(|measurement_messages| async {
             get_homeassistant_discovery_messages(&this_config).map(|mut messages| {
                 messages.extend(measurement_messages);
                 messages
@@ -53,6 +54,11 @@ async fn main() -> Result<()> {
         .and_then(|messages_to_publish| {
             send_measurements_to_mqtt(messages_to_publish, &this_config)
         })
+        .and_then(|_| async {
+            info!("SUCCESS");
+            Ok(())
+        })
+        .await
 }
 
 fn get_homeassistant_discovery_messages(
@@ -118,7 +124,7 @@ fn get_homeassistant_discovery_messages(
     ])
 }
 
-fn send_measurements_to_mqtt(
+async fn send_measurements_to_mqtt(
     messages_to_publish: Vec<MessageToPublish>,
     this_config: &Configuration,
 ) -> Result<()> {
@@ -131,22 +137,24 @@ fn send_measurements_to_mqtt(
         this_config.mqtt_username.as_str(),
         this_config.mqtt_password.as_str(),
     );
-    let (mut client, mut connection) = Client::new(mqtt_options, 10);
+    let (mut client, mut eventLoop) = AsyncClient::new(mqtt_options, 10);
 
     let mut pending_messages = messages_to_publish.len();
     debug!("Publishing {pending_messages} messages");
 
     for x in messages_to_publish {
-        client.publish(x.topic, QoS::AtLeastOnce, x.retain, x.payload.as_bytes())?;
+        client
+            .publish(x.topic, QoS::AtLeastOnce, x.retain, x.payload.as_bytes())
+            .await?;
     }
 
-    for (_i, notification) in connection.iter().enumerate() {
+    for (notification) in eventLoop.poll().await.iter() {
         match notification {
-            Ok(Event::Outgoing(outgoing)) => match outgoing {
+            Event::Outgoing(outgoing) => match outgoing {
                 PubAck(p) => debug!("Publishing MQTT... id={p}"),
                 outgoing => debug!("MQTT: Sent outgoing {:?}", outgoing),
             },
-            Ok(Event::Incoming(incoming)) => match incoming {
+            Event::Incoming(incoming) => match incoming {
                 Packet::ConnAck(_) => debug!("MQTT Connected"),
                 Packet::PubAck(pub_ack) => {
                     debug!("MQTT published id={:?}", pub_ack.pkid);
@@ -157,9 +165,8 @@ fn send_measurements_to_mqtt(
                 }
                 incoming => debug!("MQTT: Received incoming {:?}", incoming),
             },
-            Err(e) => return Err(e.into()),
         }
     }
-    client.disconnect()?;
+    client.disconnect().await?;
     Ok(())
 }
