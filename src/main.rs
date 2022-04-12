@@ -8,11 +8,12 @@ use std::process::exit;
 
 use anyhow::Result;
 use clap::Parser;
-use env_logger::Env;
-use futures::{FutureExt, StreamExt, TryFutureExt};
+use futures::TryFutureExt;
+use log::LevelFilter;
 use rumqttc::Outgoing::PubAck;
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use serde_json::json;
+use simplelog::{ColorChoice, Config, TerminalMode};
 
 use crate::bme280::{measurements_to_messages, read_bme280};
 use crate::configuration::Configuration;
@@ -26,6 +27,10 @@ struct Args {
     /// Sets a custom config file. Could have been an Option<T> with no default too
     #[clap(short, long, default_value = "/etc/sensor_mqtt/sensor_mqtt.toml")]
     config: String,
+
+    /// Enable debug logging
+    #[clap(long)]
+    debug: bool,
 }
 
 pub struct MessageToPublish {
@@ -36,9 +41,19 @@ pub struct MessageToPublish {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let opts = Args::parse();
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    let this_config = Configuration::new(&opts.config).unwrap_or_else(|e| {
+    let args = Args::parse();
+    simplelog::TermLogger::init(
+        if args.debug {
+            LevelFilter::Debug
+        } else {
+            LevelFilter::Info
+        },
+        Config::default(),
+        TerminalMode::Mixed,
+        ColorChoice::Always,
+    )?;
+    debug!("Debug logging enabled");
+    let this_config = Configuration::new(&args.config).unwrap_or_else(|e| {
         error!("Unable to load config: {e}");
         exit(2)
     });
@@ -46,16 +61,18 @@ async fn main() -> Result<()> {
     read_bme280((&this_config.i2c_bus_path).as_ref())
         .and_then(|measurements| measurements_to_messages(measurements, &this_config))
         .and_then(|measurement_messages| async {
+            debug!("{} measurements received", measurement_messages.len());
             get_homeassistant_discovery_messages(&this_config).map(|mut messages| {
                 messages.extend(measurement_messages);
                 messages
             })
         })
         .and_then(|messages_to_publish| {
+            debug!("{} messages to publish", messages_to_publish.len());
             send_measurements_to_mqtt(messages_to_publish, &this_config)
         })
         .and_then(|_| async {
-            info!("SUCCESS");
+            info!("Publish complete");
             Ok(())
         })
         .await
@@ -137,7 +154,7 @@ async fn send_measurements_to_mqtt(
         this_config.mqtt_username.as_str(),
         this_config.mqtt_password.as_str(),
     );
-    let (mut client, mut eventLoop) = AsyncClient::new(mqtt_options, 10);
+    let (client, mut event_loop) = AsyncClient::new(mqtt_options, 10);
 
     let mut pending_messages = messages_to_publish.len();
     debug!("Publishing {pending_messages} messages");
@@ -148,7 +165,7 @@ async fn send_measurements_to_mqtt(
             .await?;
     }
 
-    for (notification) in eventLoop.poll().await.iter() {
+    for notification in event_loop.poll().await.iter() {
         match notification {
             Event::Outgoing(outgoing) => match outgoing {
                 PubAck(p) => debug!("Publishing MQTT... id={p}"),

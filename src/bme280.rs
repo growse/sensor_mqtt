@@ -5,7 +5,7 @@ use crate::configuration::Configuration;
 use crate::MessageToPublish;
 use core::fmt;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use bme280::i2c::BME280;
 use bme280::Measurements;
 use linux_embedded_hal::{Delay, I2CError, I2cdev};
