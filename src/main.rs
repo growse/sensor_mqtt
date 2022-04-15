@@ -7,7 +7,7 @@ extern crate serde_derive;
 use std::process::exit;
 
 use anyhow::Result;
-use clap::Parser;
+
 use futures::TryFutureExt;
 use log::LevelFilter;
 use rumqttc::Outgoing::PubAck;
@@ -21,18 +21,6 @@ use crate::configuration::Configuration;
 mod bme280;
 mod configuration;
 
-#[derive(Parser, Debug)]
-#[clap(version, author)]
-struct Args {
-    /// Sets a custom config file. Could have been an Option<T> with no default too
-    #[clap(short, long, default_value = "/etc/sensor_mqtt/sensor_mqtt.toml")]
-    config: String,
-
-    /// Enable debug logging
-    #[clap(long)]
-    debug: bool,
-}
-
 pub struct MessageToPublish {
     topic: String,
     payload: String,
@@ -41,9 +29,12 @@ pub struct MessageToPublish {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = Args::parse();
+    let this_config = Configuration::new().unwrap_or_else(|e| {
+        error!("Unable to load config: {e}");
+        exit(2)
+    });
     simplelog::TermLogger::init(
-        if args.debug {
+        if this_config.debug_log {
             LevelFilter::Debug
         } else {
             LevelFilter::Info
@@ -53,10 +44,7 @@ async fn main() -> Result<()> {
         ColorChoice::Always,
     )?;
     debug!("Debug logging enabled");
-    let this_config = Configuration::new(&args.config).unwrap_or_else(|e| {
-        error!("Unable to load config: {e}");
-        exit(2)
-    });
+    dbg!(&this_config);
 
     read_bme280((&this_config.i2c_bus_path).as_ref())
         .and_then(|measurements| measurements_to_messages(measurements, &this_config))
