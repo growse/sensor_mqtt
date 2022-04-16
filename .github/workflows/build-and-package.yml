@@ -45,7 +45,7 @@ jobs:
       - name: Package
         working-directory: ./packaging
         run: |
-          export DEB_VERSION="$(cat Cargo.toml | grep "^version = " | awk  '{gsub(/"/, "", $3); print $3}')-$GITHUB_RUN_NUMBER"
+          export DEB_VERSION="$(cat ../Cargo.toml | grep "^version = " | awk  '{gsub(/"/, "", $3); print $3}')-$GITHUB_RUN_NUMBER"
           bundle exec fpm -f \
           -s dir \
           --deb-priority optional \
