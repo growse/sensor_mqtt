@@ -32,23 +32,43 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-      - name: Set up Ruby 2.7
-        uses: actions/setup-ruby@v1
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7.x
-      - name: Install gems
-        run: |
-          gem install bundler
-          bundle install --jobs 4 --retry 3
+          working-directory: ./packaging
+          bundler-cache: true
       - name: Download build artifact
         uses: actions/download-artifact@v3
       - name: Set binary as executable
         run: |
           find target -name sensor_mqtt -exec chmod +x {} \;
       - name: Package
+        working-directory: ./packaging
         run: |
           export DEB_VERSION="$(cat Cargo.toml | grep "^version = " | awk  '{gsub(/"/, "", $3); print $3}')-$GITHUB_RUN_NUMBER"
-          bundle exec fpm -f -s dir --deb-priority optional --maintainer github@growse.com --vendor github@growse.com --license MIT -t deb -n $DEB_NAME --description "$APP_DESCRIPTION" --url $APP_URL --deb-changelog CHANGELOG.md --prefix / -a $DEB_ARCH -v $DEB_VERSION --before-install deb_scripts/before_install.sh --before-upgrade deb_scripts/before_upgrade.sh --after-remove deb_scripts/after_remove.sh --after-install deb_scripts/after_install.sh --after-upgrade deb_scripts/after_upgrade.sh --deb-systemd sensor_mqtt.service --config-files /etc/sensor_mqtt/sensor_mqtt.toml sensor_mqtt.toml=/etc/sensor_mqtt/sensor_mqtt.toml target/arm-unknown-linux-gnueabi/release/sensor_mqtt=/usr/bin/sensor_mqtt
+          bundle exec fpm -f \
+          -s dir \
+          --deb-priority optional \
+          --maintainer github@growse.com \
+          --vendor github@growse.com \
+          --license MIT \
+          -t deb \
+          -n $DEB_NAME \
+          --description "$APP_DESCRIPTION" \
+          --url $APP_URL \
+          --deb-changelog ../CHANGELOG.md \
+          --prefix / \
+          -a $DEB_ARCH \
+          -v $DEB_VERSION \
+          --before-install deb_scripts/before_install.sh \
+          --before-upgrade deb_scripts/before_upgrade.sh \
+          --after-remove deb_scripts/after_remove.sh \
+          --after-install deb_scripts/after_install.sh \
+          --after-upgrade deb_scripts/after_upgrade.sh \
+          --deb-systemd sensor_mqtt.service \
+          --config-files /etc/sensor_mqtt/sensor_mqtt.toml \
+          sensor_mqtt.toml=/etc/sensor_mqtt/sensor_mqtt.toml \
+          ../target/arm-unknown-linux-gnueabi/release/sensor_mqtt=/usr/bin/sensor_mqtt
         env:
           DEB_NAME: sensor_mqtt
           APP_DESCRIPTION: Script to publish BME280 and BLE sensor metrics over MQTT
@@ -58,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: deb-package
-          path: "*.deb"
+          path: "packaging/*.deb"
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
