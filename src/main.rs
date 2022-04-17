@@ -7,7 +7,6 @@ extern crate serde_derive;
 use std::process::exit;
 
 use anyhow::Result;
-
 use futures::TryFutureExt;
 use log::LevelFilter;
 use rumqttc::Outgoing::PubAck;
@@ -29,12 +28,12 @@ pub struct MessageToPublish {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let this_config = Configuration::new().unwrap_or_else(|e| {
+    let configuration = Configuration::new().unwrap_or_else(|e| {
         error!("Unable to load config: {e}");
         exit(2)
     });
     simplelog::TermLogger::init(
-        if this_config.debug_log {
+        if configuration.debug_log {
             LevelFilter::Debug
         } else {
             LevelFilter::Info
@@ -44,20 +43,19 @@ async fn main() -> Result<()> {
         ColorChoice::Always,
     )?;
     debug!("Debug logging enabled");
-    dbg!(&this_config);
-
-    read_bme280((&this_config.i2c_bus_path).as_ref())
-        .and_then(|measurements| measurements_to_messages(measurements, &this_config))
+    debug!("Configuration is {:?}", configuration);
+    read_bme280((&configuration.i2c_bus_path).as_ref())
+        .and_then(|measurements| measurements_to_messages(measurements, &configuration))
         .and_then(|measurement_messages| async {
             debug!("{} measurements received", measurement_messages.len());
-            get_homeassistant_discovery_messages(&this_config).map(|mut messages| {
+            get_homeassistant_discovery_messages(&configuration).map(|mut messages| {
                 messages.extend(measurement_messages);
                 messages
             })
         })
         .and_then(|messages_to_publish| {
             debug!("{} messages to publish", messages_to_publish.len());
-            send_measurements_to_mqtt(messages_to_publish, &this_config)
+            send_measurements_to_mqtt(messages_to_publish, &configuration)
         })
         .and_then(|_| async {
             info!("Publish complete");

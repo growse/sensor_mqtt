@@ -5,13 +5,45 @@ use config::Config;
 #[derive(Parser, Debug)]
 #[clap(version, author)]
 pub struct Args {
-    /// Sets a custom config file. Could have been an Option<T> with no default too
+    /// Sets a custom config file
     #[clap(short, long, default_value = "/etc/sensor_mqtt/sensor_mqtt.toml")]
     config: String,
 
     /// Enable debug logging
     #[clap(short, long)]
     debug: bool,
+
+    /// Specify the I2C bus path
+    #[clap(long)]
+    i2c_bus_path: Option<String>,
+
+    /// Specify the MQTT host to connect to
+    #[clap(long)]
+    mqtt_host: Option<String>,
+
+    /// Specify the MQTT port to connect to
+    #[clap(long)]
+    mqtt_port: Option<u16>,
+
+    /// Specify the MQTT authentication username
+    #[clap(long)]
+    mqtt_user: Option<String>,
+
+    /// Specify the MQTT authentication password
+    #[clap(long)]
+    mqtt_password: Option<String>,
+
+    /// Specify the base topic used to publish MQTT messages on
+    #[clap(long)]
+    mqtt_topic_base: Option<String>,
+
+    /// Specify the reported device name
+    #[clap(long)]
+    device_name: Option<String>,
+
+    /// Enable HomeAssistant discovery messages to be sent
+    #[clap(short, long)]
+    enable_homeassistant_discovery: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -56,6 +88,20 @@ impl Configuration {
                 if args.debug {
                     c.debug_log = true
                 }
+                if args.enable_homeassistant_discovery {
+                    c.enable_homeassistant_discovery = true
+                }
+
+                args.i2c_bus_path.map(|bus_path| c.i2c_bus_path = bus_path);
+                args.mqtt_host.map(|mqtt_host| c.mqtt_host = mqtt_host);
+                args.mqtt_port.map(|mqtt_port| c.mqtt_port = mqtt_port);
+                args.mqtt_user.map(|mqtt_user| c.mqtt_username = mqtt_user);
+                args.mqtt_password
+                    .map(|mqtt_password| c.mqtt_password = mqtt_password);
+                args.mqtt_topic_base
+                    .map(|mqtt_topic_base| c.mqtt_topic_base = mqtt_topic_base);
+                args.device_name
+                    .map(|device_name| c.device_name = device_name);
                 c
             })
             .map_err(|e| e.into())
