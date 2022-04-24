@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
         ColorChoice::Always,
     )?;
     debug!("Debug logging enabled");
-    debug!("Configuration is {:?}", configuration);
+    debug!("Configuration is {:#?}", configuration);
     read_bme280((&configuration.i2c_bus_path).as_ref())
         .and_then(|measurements| measurements_to_messages(measurements, &configuration))
         .and_then(|measurement_messages| async {
@@ -54,7 +54,6 @@ async fn main() -> Result<()> {
             })
         })
         .and_then(|messages_to_publish| {
-            debug!("{} messages to publish", messages_to_publish.len());
             send_measurements_to_mqtt(messages_to_publish, &configuration)
         })
         .and_then(|_| async {
@@ -140,6 +139,7 @@ async fn send_measurements_to_mqtt(
         this_config.mqtt_username.as_str(),
         this_config.mqtt_password.as_str(),
     );
+
     let (client, mut event_loop) = AsyncClient::new(mqtt_options, 10);
 
     let mut pending_messages = messages_to_publish.len();
@@ -151,7 +151,8 @@ async fn send_measurements_to_mqtt(
             .await?;
     }
 
-    for notification in event_loop.poll().await.iter() {
+    loop {
+        let notification = event_loop.poll().await?;
         match notification {
             Event::Outgoing(outgoing) => match outgoing {
                 PubAck(p) => debug!("Publishing MQTT... id={p}"),
@@ -170,6 +171,8 @@ async fn send_measurements_to_mqtt(
             },
         }
     }
+
+    debug!("Disconnecting from MQTT");
     client.disconnect().await?;
     Ok(())
 }

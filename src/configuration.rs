@@ -79,7 +79,6 @@ impl Default for Configuration {
 impl Configuration {
     pub(crate) fn new() -> Result<Self> {
         let args: Args = Args::parse();
-        dbg!(&args);
         Config::builder()
             .add_source(config::File::with_name(&args.config).required(false))
             .build()
