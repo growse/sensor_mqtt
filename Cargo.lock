@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "bme280"
-version = "0.4.1"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afa0ec59ce7903e8f6678855e70140b78f2d7a047d5afadf7b14266b020799ae"
+checksum = "3d52d85db2766df0fe57b7b2033c2311cf874b6f40fefa2195a345bbe16c9da5"
 dependencies = [
  "embedded-hal",
  "serde",
