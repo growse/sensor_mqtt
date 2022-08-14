@@ -8,7 +8,7 @@ edition = "2021"
 anyhow = "1.0.61"
 bme280 = { version = "0.4.4", features = ["serde"] }
 linux-embedded-hal = "0.4.0-alpha.2"
-futures="0.3.22"
+futures="0.3.23"
 log = "0.4"
 rumqttc = "0.14"
 simplelog = "0.12.0"
