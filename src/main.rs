@@ -83,6 +83,7 @@ fn get_homeassistant_discovery_messages(
             payload: json!({
             "device_class": "temperature",
             "name": format!("{} Temperature",this_config.device_name),
+            "object_id": format!("{hostname}_temperature", hostname = whoami::hostname().replace("-", "_")), // Becomes HA entity_id
             "state_topic": state_topic,
             "unit_of_measurement": "°C",
             "value_template": "{{ value_json.temperature}}",
@@ -99,6 +100,7 @@ fn get_homeassistant_discovery_messages(
             payload: json!({
             "device_class": "pressure",
             "name": format!("{} Pressure",this_config.device_name),
+            "object_id": format!("{hostname}_pressure", hostname = whoami::hostname().replace("-", "_")), // Becomes HA entity_id
             "state_topic": state_topic,
             "unit_of_measurement": "Pa",
             "value_template": "{{ value_json.pressure}}",
@@ -115,6 +117,7 @@ fn get_homeassistant_discovery_messages(
             payload: json!({
             "device_class": "humidity",
             "name": format!("{} Humidity",this_config.device_name),
+            "object_id": format!("{hostname}_humidity", hostname = whoami::hostname().replace("-", "_")), // Becomes HA entity_id
             "state_topic": state_topic,
             "unit_of_measurement": "%",
             "value_template": "{{ value_json.humidity}}",
