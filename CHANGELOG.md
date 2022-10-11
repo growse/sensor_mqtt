@@ -2,7 +2,7 @@
 
 ## 0.2.0
 
-Let's rewrite it in Rust! 
+Let's rewrite it in Rust!
 * One-shot, rather than a daemon
 * Publishes homassistant autodiscovery data
 
