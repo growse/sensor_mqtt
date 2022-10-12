@@ -83,7 +83,7 @@ fn get_homeassistant_discovery_messages(
             payload: json!({
             "device_class": "temperature",
             "name": format!("{} Temperature",this_config.device_name),
-            "object_id": format!("{device_name}_temperature", device_name = this_config.device_name.replace("-", "_")).replace(" ","_"), // Becomes HA entity_id
+            "object_id": format!("{device_name}_temperature", device_name = this_config.device_name.to_lowercase().replace("-", "_")).replace(" ","_"), // Becomes HA entity_id
             "state_topic": state_topic,
             "unit_of_measurement": "°C",
             "value_template": "{{ value_json.temperature}}",
@@ -100,7 +100,7 @@ fn get_homeassistant_discovery_messages(
             payload: json!({
             "device_class": "pressure",
             "name": format!("{} Pressure",this_config.device_name),
-            "object_id": format!("{device_name}_pressure", device_name = this_config.device_name.replace("-", "_")).replace(" ","_"),
+            "object_id": format!("{device_name}_pressure", device_name = this_config.device_name.to_lowercase().replace("-", "_")).replace(" ","_"),
             "state_topic": state_topic,
             "unit_of_measurement": "Pa",
             "value_template": "{{ value_json.pressure}}",
@@ -117,7 +117,7 @@ fn get_homeassistant_discovery_messages(
             payload: json!({
             "device_class": "humidity",
             "name": format!("{} Humidity",this_config.device_name),
-            "object_id": format!("{device_name}_humidity", device_name = this_config.device_name.replace("-", "_")).replace(" ","_"),
+            "object_id": format!("{device_name}_humidity", device_name = this_config.device_name.to_lowercase().replace("-", "_")).replace(" ","_"),
             "state_topic": state_topic,
             "unit_of_measurement": "%",
             "value_template": "{{ value_json.humidity}}",
