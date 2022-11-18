@@ -1,9 +1,26 @@
+---
+env:
+  PACKAGE_NAME: sensor_mqtt
+  PACKAGE_DESCRIPTION: Script to publish BME280 and BLE sensor metrics over MQTT
+  PACKAGE_ARCH: armhf
+  RUST_TARGET: arm-unknown-linux-gnueabi
+  CARGO_USE_CROSS: true
+  BINARY_NAME: sensor_mqtt
+
 name: Build, package and upload
-on:
+"on":
   push:
+    paths-ignore:
+      - "*.md"
+      - LICENSE
+      - rustfmt.toml
+      - .github/renovate.json
+      - .gitignore
     branches:
       - main
   pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -15,16 +32,28 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: ${{ env.RUST_TARGET }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          use-cross: true
-          args: --release --target=arm-unknown-linux-gnueabi
+          use-cross: ${{ env.CARGO_USE_CROSS}}
+          args: --release --target=${{ env.RUST_TARGET }}
+      - uses: actions-rs/cargo@v1
+        name: generate coverage
+        with:
+          command: tarpaulin
+          args: --out Xml
+      - uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+        if: always()
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
           name: target
-          path: target/**/sensor_mqtt
+          path: target/**/${{ env.BINARY_NAME }}
   build-package:
     name: Build Deb Package
     runs-on: ubuntu-latest
@@ -41,7 +70,7 @@ jobs:
         uses: actions/download-artifact@v3
       - name: Set binary as executable
         run: |
-          find target -name sensor_mqtt -exec chmod +x {} \;
+          find target -name ${{ env.BINARY_NAME }} -exec chmod +x {} \;
       - name: Package
         working-directory: ./packaging
         run: |
@@ -70,10 +99,10 @@ jobs:
           sensor_mqtt.toml=/etc/sensor_mqtt/sensor_mqtt.toml \
           ../target/arm-unknown-linux-gnueabi/release/sensor_mqtt=/usr/bin/sensor_mqtt
         env:
-          DEB_NAME: sensor_mqtt
-          APP_DESCRIPTION: Script to publish BME280 and BLE sensor metrics over MQTT
-          APP_URL: https://github.com/growse/sensor_mqtt
-          DEB_ARCH: armhf
+          DEB_NAME: ${{ env.PACKAGE_NAME }}
+          APP_DESCRIPTION: ${{ env.PACKAGE_DESCRIPTION }}
+          APP_URL: https://github.com/${{ github.repository }}
+          DEB_ARCH: ${{ env.PACKAGE_ARCH }}
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
