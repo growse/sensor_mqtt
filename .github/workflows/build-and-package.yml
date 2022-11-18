@@ -35,13 +35,15 @@ jobs:
           target: ${{ env.RUST_TARGET }}
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+      - name: Install cargo tarpaulin
+        run: cargo install cargo-tarpaulin
       - uses: actions-rs/cargo@v1
         with:
           command: build
           use-cross: ${{ env.CARGO_USE_CROSS}}
           args: --release --target=${{ env.RUST_TARGET }}
       - uses: actions-rs/cargo@v1
-        name: generate coverage
+        name: Generate coverage
         with:
           command: tarpaulin
           args: --out Xml
