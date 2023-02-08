@@ -91,16 +91,13 @@ impl Configuration {
                     c.enable_homeassistant_discovery = true
                 }
 
-                args.i2c_bus_path.map(|bus_path| c.i2c_bus_path = bus_path);
-                args.mqtt_host.map(|mqtt_host| c.mqtt_host = mqtt_host);
-                args.mqtt_port.map(|mqtt_port| c.mqtt_port = mqtt_port);
-                args.mqtt_user.map(|mqtt_user| c.mqtt_username = mqtt_user);
-                args.mqtt_password
-                    .map(|mqtt_password| c.mqtt_password = mqtt_password);
-                args.mqtt_topic_base
-                    .map(|mqtt_topic_base| c.mqtt_topic_base = mqtt_topic_base);
-                args.device_name
-                    .map(|device_name| c.device_name = device_name);
+                if let Some(bus_path) = args.i2c_bus_path { c.i2c_bus_path = bus_path };
+                if let Some(mqtt_host) = args.mqtt_host { c.mqtt_host = mqtt_host }
+                if let Some(mqtt_port) = args.mqtt_port { c.mqtt_port = mqtt_port }
+                if let Some(mqtt_user) = args.mqtt_user { c.mqtt_username = mqtt_user }
+                if let Some(mqtt_password) = args.mqtt_password { c.mqtt_password = mqtt_password }
+                if let Some(mqtt_topic_base) = args.mqtt_topic_base { c.mqtt_topic_base = mqtt_topic_base }
+                if let Some(device_name) = args.device_name { c.device_name = device_name }
                 c
             })
             .map_err(|e| e.into())
