@@ -10,7 +10,7 @@ bme280 = { version = "0.4.4", features = ["serde"] }
 linux-embedded-hal = "0.4.0-alpha.2"
 futures="0.3.28"
 log = "0.4"
-rumqttc = "0.20"
+rumqttc = "0.21"
 simplelog = "0.12.1"
 i2cdev = "0.5"
 config = "0.13"
