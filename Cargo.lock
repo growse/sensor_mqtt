@@ -489,7 +489,7 @@ checksum = "409296415b8abc7b47e5b77096faae14595c53724972da227434fc8f4b05ec8b"
 dependencies = [
  "bitflags 1.3.2",
  "libc",
- "nix",
+ "nix 0.23.2",
 ]
 
 [[package]]
@@ -522,7 +522,19 @@ dependencies = [
  "bitflags 1.3.2",
  "byteorder",
  "libc",
- "nix",
+ "nix 0.23.2",
+]
+
+[[package]]
+name = "i2cdev"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "597f56d08cebc0fb3e67d49f48124f49e1c7ac297a21d60bc90a28b9482fb35c"
+dependencies = [
+ "bitflags 2.3.3",
+ "byteorder",
+ "libc",
+ "nix 0.26.2",
 ]
 
 [[package]]
@@ -598,9 +610,9 @@ dependencies = [
  "cast",
  "embedded-hal",
  "gpio-cdev",
- "i2cdev",
+ "i2cdev 0.5.1",
  "nb",
- "nix",
+ "nix 0.23.2",
  "serial-core",
  "serial-unix",
  "spidev",
@@ -696,6 +708,18 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.26.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfdda3d196821d6af13126e40375cdf7da646a96114af134d5f417a9a1dc8e1a"
+dependencies = [
+ "bitflags 1.3.2",
+ "cfg-if",
+ "libc",
+ "static_assertions",
 ]
 
 [[package]]
@@ -1047,7 +1071,7 @@ dependencies = [
  "clap",
  "config",
  "futures",
- "i2cdev",
+ "i2cdev 0.6.0",
  "linux-embedded-hal",
  "log",
  "rumqttc",
@@ -1160,7 +1184,7 @@ checksum = "5a204ca68d7f2109ffaf6326b79d8abf0014870625b78c8aff1941a5e4b9ff7d"
 dependencies = [
  "bitflags 1.3.2",
  "libc",
- "nix",
+ "nix 0.23.2",
 ]
 
 [[package]]
@@ -1177,6 +1201,12 @@ checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 dependencies = [
  "lock_api",
 ]
+
+[[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "strsim"
@@ -1201,7 +1231,7 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ef9c9bcbfeb596ce4da59b2c59736235f35dcd516f03958ea10834473224157"
 dependencies = [
- "nix",
+ "nix 0.23.2",
 ]
 
 [[package]]
