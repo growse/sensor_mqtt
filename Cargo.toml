@@ -11,7 +11,7 @@ linux-embedded-hal = "0.4.0-alpha.2"
 futures="0.3.30"
 log = "0.4"
 rumqttc = "0.24"
-simplelog = "0.12.1"
+simplelog = "0.12.2"
 i2cdev = "0.6"
 config = "0.14"
 clap = { version = "4.5.1", features = ["derive"] }
