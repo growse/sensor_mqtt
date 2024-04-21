@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.82"
 bme280 = { version = "0.5.0", features = ["serde"] }
-linux-embedded-hal = "0.4.0-alpha.2"
+linux-embedded-hal = "0.4.0"
 futures="0.3.30"
 log = "0.4"
 rumqttc = "0.24"
