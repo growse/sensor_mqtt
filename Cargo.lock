@@ -546,9 +546,9 @@ checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
 name = "i2cdev"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "597f56d08cebc0fb3e67d49f48124f49e1c7ac297a21d60bc90a28b9482fb35c"
+checksum = "a01f563561b53e2def844167c92984da13779a53ca409e948a03400633cb8228"
 dependencies = [
  "bitflags 2.5.0",
  "byteorder",
